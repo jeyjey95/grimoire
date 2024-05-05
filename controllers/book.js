@@ -3,12 +3,20 @@ const fs = require('fs');
 const sharp = require('sharp');
 
 exports.createBook = (req, res, next) => {
-  const bookObject = JSON.parse(req.body.book);
+  // const bookObject = JSON.parse(req.body.book);
+  // delete bookObject._id;
+  // delete bookObject.userId;
+
+  const bookObject = req.file ? {
+    ...JSON.parse(req.body.book)
+  } : { ...req.body };
+
   delete bookObject._id;
   delete bookObject.userId;
 
   //Pour éviter la double erreur
-  try {
+  //try {
+  if (req.file) {
     const resizedFileName = `resized-${req.file.filename.replace(/\.[^.]+$/, '')}.webp`;
     const resizedImagePath = `./images/${resizedFileName}`;
 
@@ -37,7 +45,7 @@ exports.createBook = (req, res, next) => {
             });
           });
 
-        res.status(200).json({ message: 'Objet enregistré !' })
+        res.status(201).json({ message: 'Objet enregistré !' })
       })
       .catch(error => {
         // Supprimez le fichier si manque un champ
@@ -50,55 +58,8 @@ exports.createBook = (req, res, next) => {
           error: error
         });
       })
-  } catch (error) {
+    //  } catch (error) {
   }
-};
-
-exports.getBooksBestRating = (req, res, next) => {
-  Book.find()
-    .sort({ averageRating: -1 })
-    .limit(3)
-    .then(bestRatedBook => res.status(200).json(bestRatedBook))
-    .catch(error => res.status(400).json({ error }))
-};
-
-exports.addRating = (req, res) => {
-  Book.findOne({ _id: req.params.id })
-    .then(book => {
-
-      // Vérifie que la note est comprise entre 1 et 5 et qu'une note n'a pas déja été attribuer par cette utilisateur
-      if (book.ratings.some(rating => rating.userId === req.userId) || (req.body.grade < 1 || req.body.grade > 5)) {
-        res.status(400).json({ error: 'Erreur de la notation' });
-      } else {
-        // Ajouter la nouvelle note au livre
-        book.ratings.push({
-          userId: req.auth.userId,
-          grade: req.body.rating,
-        });
-        // Mettre à jour la note moyenne
-        const totalRatings = book.ratings.length;
-        const sumOfRatings = book.ratings.reduce((acc, rating) => acc + rating.grade, 0);
-        book.averageRating = sumOfRatings / totalRatings;
-        book.averageRating = parseFloat(book.averageRating.toFixed(1));
-        // Sauvegarde le livre
-        book.save()
-          .then(book => {
-            res.status(200).json(book);
-          })
-          .catch(error => res.status(400).json({ error }));
-      }
-    })
-    .catch(error => res.status(400).json({ error }));
-};
-
-exports.getOneBook = (req, res, next) => {
-  Book.findOne({ _id: req.params.id })
-    .then((book) => res.status(200).json(book))
-    .catch((error) => {
-      res.status(400).json({
-        error: error
-      });
-    });
 };
 
 exports.modifyBook = (req, res, next) => {
@@ -152,10 +113,10 @@ exports.modifyBook = (req, res, next) => {
             });
           });
       } else {
-        if(bookObject.author && bookObject.year && bookObject.title && bookObject.genre){
-        Book.updateOne({ _id: req.params.id }, { ...bookObject })
-          .then(() => res.status(200).json({ message: 'Livre modifié!' }))
-          .catch((updateError) => res.status(400).json({ error: updateError.message }));
+        if (bookObject.author && bookObject.year && bookObject.title && bookObject.genre) {
+          Book.updateOne({ _id: req.params.id }, { ...bookObject })
+            .then(() => res.status(200).json({ message: 'Livre modifié!' }))
+            .catch((updateError) => res.status(400).json({ error: updateError.message }));
         }
         else {
           res.status(400).json({ message: "Veuillez remplir tous les champs" });
@@ -164,6 +125,54 @@ exports.modifyBook = (req, res, next) => {
     })
     .catch((error) => {
       res.status(400).json({ error });
+    });
+};
+
+
+exports.getBooksBestRating = (req, res, next) => {
+  Book.find()
+    .sort({ averageRating: -1 })
+    .limit(3)
+    .then(bestRatedBook => res.status(200).json(bestRatedBook))
+    .catch(error => res.status(400).json({ error }))
+};
+
+exports.addRating = (req, res) => {
+  Book.findOne({ _id: req.params.id })
+    .then(book => {
+
+      // Vérifie que la note est comprise entre 1 et 5 et qu'une note n'a pas déja été attribuer par cette utilisateur
+      if (book.ratings.some(rating => rating.userId === req.userId) || (req.body.grade < 1 || req.body.grade > 5)) {
+        res.status(400).json({ error: 'Erreur de la notation' });
+      } else {
+        // Ajouter la nouvelle note au livre
+        book.ratings.push({
+          userId: req.auth.userId,
+          grade: req.body.rating,
+        });
+        // Mettre à jour la note moyenne
+        const totalRatings = book.ratings.length;
+        const sumOfRatings = book.ratings.reduce((acc, rating) => acc + rating.grade, 0);
+        book.averageRating = sumOfRatings / totalRatings;
+        book.averageRating = parseFloat(book.averageRating.toFixed(1));
+        // Sauvegarde le livre
+        book.save()
+          .then(book => {
+            res.status(200).json(book);
+          })
+          .catch(error => res.status(400).json({ error }));
+      }
+    })
+    .catch(error => res.status(400).json({ error }));
+};
+
+exports.getOneBook = (req, res, next) => {
+  Book.findOne({ _id: req.params.id })
+    .then((book) => res.status(200).json(book))
+    .catch((error) => {
+      res.status(400).json({
+        error: error
+      });
     });
 };
 
