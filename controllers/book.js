@@ -16,7 +16,7 @@ exports.createBook = (req, res, next) => {
 
   if (req.file) {
 
-    if (!((req.file.mimetype).includes( 'image' ))){
+    if (!((req.file.mimetype).includes('image'))) {
       fs.unlink(`./images/${req.file.filename}`, (unlinkErr) => {
         if (unlinkErr) {
           console.error('Erreur lors de la suppression du fichier original:', unlinkErr);
@@ -25,7 +25,7 @@ exports.createBook = (req, res, next) => {
 
       return res.status(400).json({ message: 'Vous devez selectionner uniquement une image !' });
     }
-  
+
     const resizedFileName = `resized-${req.file.filename.replace(/\.[^.]+$/, '')}.webp`;
     const resizedImagePath = `./images/${resizedFileName}`;
 
@@ -84,6 +84,17 @@ exports.modifyBook = (req, res, next) => {
       if (book.userId !== req.auth.userId) {
         return res.status(403).json({ message: 'unauthorized request' });
       } else if (req.file) {
+
+        if (!((req.file.mimetype).includes('image'))) {
+          fs.unlink(`./images/${req.file.filename}`, (unlinkErr) => {
+            if (unlinkErr) {
+              console.error('Erreur lors de la suppression du fichier original:', unlinkErr);
+            }
+          });
+
+          return res.status(400).json({ message: 'Vous devez selectionner uniquement une image !' });
+        }
+
         // Spécifiez un chemin de sortie différent pour le fichier redimensionné
         const resizedFileName = `resized-${req.file.filename.replace(/\.[^.]+$/, '')}.webp`;
         const resizedImagePath = `./images/${resizedFileName}`;
@@ -112,12 +123,17 @@ exports.modifyBook = (req, res, next) => {
               // suppression ancien fichier
               fs.unlink('./images/' + file, (unlinkErr) => {
                 if (unlinkErr) {
-                  console.error('Erreur lors de la suppression du fichier original:', unlinkErr);
+                  console.error('Erreur lors de la suppression du fichier original::', unlinkErr);
                 }
                 // Mise à jour du livre avec la nouvelle URL redimensionnée
-                Book.updateOne({ _id: req.params.id }, { ...bookObject, imageUrl: `${req.protocol}://${req.get('host')}/images/${resizedFileName}`, _id: req.params.id })
-                  .then(() => res.status(200).json({ message: 'Livre modifié!' }))
-                  .catch((updateError) => res.status(400).json({ error: updateError.message }));
+                if (bookObject.author && bookObject.year && bookObject.title && bookObject.genre) {
+                  Book.updateOne({ _id: req.params.id }, { ...bookObject, imageUrl: `${req.protocol}://${req.get('host')}/images/${resizedFileName}`, _id: req.params.id })
+                    .then(() => res.status(200).json({ message: 'Livre modifié!' }))
+                    .catch((updateError) => res.status(400).json({ error: updateError.message }));
+                }
+                else {
+                  res.status(400).json({ message: "Veuillez remplir tous les champs" });
+                }
               });
             });
           });
@@ -136,7 +152,6 @@ exports.modifyBook = (req, res, next) => {
       res.status(400).json({ error });
     });
 };
-
 
 exports.getBooksBestRating = (req, res, next) => {
   Book.find()
