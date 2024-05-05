@@ -46,7 +46,6 @@ exports.createBook = (req, res, next) => {
             console.error('Erreur lors de la suppression du fichier original:', unlinkErr);
           }
         });
-        if (!book.author) { const mess = "author manquant"; }
         res.status(404).json({
           error
         });
@@ -99,8 +98,7 @@ exports.getOneBook = (req, res, next) => {
       res.status(404).json({
         error: error
       });
-    }
-    );
+    });
 };
 
 exports.modifyBook = (req, res, next) => {
@@ -154,9 +152,14 @@ exports.modifyBook = (req, res, next) => {
             });
           });
       } else {
+        if(bookObject.author && bookObject.year && bookObject.title && bookObject.genre){
         Book.updateOne({ _id: req.params.id }, { ...bookObject })
-          .then(() => res.status(200).json({ message: 'Livre modifié!' }))
-          .catch((updateError) => res.status(500).json({ error: updateError.message }));
+          .then(() => res.status(201).json({ message: 'Livre modifié!' }))
+          .catch((updateError) => res.status(400).json({ error: updateError.message }));
+        }
+        else {
+          res.status(404).json({ bookObject });
+        }
       }
     })
     .catch((error) => {
