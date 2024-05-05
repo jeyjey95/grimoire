@@ -14,9 +14,18 @@ exports.createBook = (req, res, next) => {
   delete bookObject._id;
   delete bookObject.userId;
 
-  //Pour éviter la double erreur
-  //try {
   if (req.file) {
+
+    if (!((req.file.mimetype).includes( 'image' ))){
+      fs.unlink(`./images/${req.file.filename}`, (unlinkErr) => {
+        if (unlinkErr) {
+          console.error('Erreur lors de la suppression du fichier original:', unlinkErr);
+        }
+      });
+
+      return res.status(400).json({ message: 'Vous devez selectionner uniquement une image !' });
+    }
+  
     const resizedFileName = `resized-${req.file.filename.replace(/\.[^.]+$/, '')}.webp`;
     const resizedImagePath = `./images/${resizedFileName}`;
 
