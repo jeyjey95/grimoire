@@ -13,9 +13,7 @@ exports.createBook = (req, res, next) => {
 
   delete bookObject._id;
   delete bookObject.userId;
-
   if (req.file) {
-
     if (!((req.file.mimetype).includes('image'))) {
       fs.unlink(`./images/${req.file.filename}`, (unlinkErr) => {
         if (unlinkErr) {

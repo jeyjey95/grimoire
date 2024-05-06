@@ -6,7 +6,6 @@ const multer = require('multer');
 //   'image/png': 'png',
 //   'image/webp': 'webp'
 // };
-
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
     callback(null, 'images')
@@ -14,11 +13,11 @@ const storage = multer.diskStorage({
   filename: (req, file, callback) => {
     const name = file.originalname.split(' ').join('_');
     const withoutExt = name.substring(0, name.lastIndexOf('.'));
-
+    //console.error('test');
     var regex = /(?:\.([^.]+))?$/;
     var extension = regex.exec(name)[1];
     //const extension = MIME_TYPES[file.mimetype];
-    
+
     callback(null, withoutExt + Date.now() + '.' + extension);
   }
 });
